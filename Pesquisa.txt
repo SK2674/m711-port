@@ -1,0 +1,207 @@
+Documentação Técnica: Protocolo do Redragon M711 (Cobra)
+
+Versão: 1.0
+Data: 2026-09-26
+Fontes: OpenRGB Wiki, GitHub (dokutan/mouse_m908, rolimans/mouse_m711, D4rkTT/Redragon-RGB-SDK), Linux Hardware Database, e discussões da comunidade.
+1. Visão Geral
+
+O Redragon M711 (Cobra) utiliza um protocolo proprietário sobre a interface USB HID (Human Interface Device). A comunicação é feita através de pacotes de controle de 16 bytes com Report ID 0. Este protocolo foi mapeado através de engenharia reversa pela comunidade, principalmente para permitir o controle do mouse em sistemas Linux, BSD e Haiku.
+
+O dispositivo se apresenta ao sistema com o VID:PID 0x04d9:0xfc30 (Holtek Semiconductor) e é reconhecido como "USB Gaming Mouse". A engenharia reversa revelou que muitos comandos são compartilhados com outros modelos da Redragon, como o M908, o que facilitou o desenvolvimento de ferramentas de controle.
+2. Estrutura do Protocolo
+
+O protocolo é baseado em pacotes de 16 bytes. A estrutura geral de um pacote de escrita é a seguinte:
+Índice (Byte)	Valor Típico	Descrição
+0x00	0x02	Cabeçalho fixo
+0x01	0xF3 (escrita) / 0xF1 (aplicar)	Comando
+0x02	0x49 / 0x02	Endereço de memória (LSB)
+0x03	0x04	Endereço de memória (MSB)
+0x04	0xNN	Número de bytes de dados
+0x05	0x00	Reservado
+0x06	0x00	Reservado
+0x07	0x00	Reservado
+0x08+	0xXX	Início dos dados
+2.1. Comandos Principais
+Comando	Bytes	Descrição
+Start	02 F3 46 04 02	Pacote de inicialização ou "Start".
+Apply Settings	02 F1 02 04	Aplica as configurações previamente enviadas.
+Write	02 F3 ...	Comando de escrita genérico.
+3. Endereços de Memória Conhecidos
+
+A comunidade mapeou diversos endereços de memória que controlam configurações específicas do mouse. Endereços sem descrição foram vistos em capturas, mas sua função exata ainda é desconhecida.
+Endereço	Tamanho	Descrição
+0x002C	2 bytes	Perfil Ativo
+0x0032	6 bytes	Taxa de Polling (2 bytes) + 2 outros valores
+0x003E	2 bytes	Desconhecido
+0x0446	2 bytes	Desconhecido
+0x0449	6 bytes	Controle de Iluminação (Lighting Control)
+0x044F	1 byte	Desconhecido
+0x0451	6 bytes	Desconhecido
+0x0457	1 byte	Desconhecido
+0x0459	6 bytes	Desconhecido
+0x045F	1 byte	Desconhecido
+0x0461	6 bytes	Desconhecido
+0x0471	1 byte	Desconhecido
+0x0469	6 bytes	Desconhecido
+0x046F	1 byte	Desconhecido
+4. Configurações Específicas
+4.1. Taxa de Polling (Polling Rate)
+
+A taxa de polling é configurada no endereço 0x0032 e utiliza os seguintes valores:
+Valor (Hex)	Taxa
+0x01	1000 Hz
+0x02	500 Hz
+0x04	250 Hz
+0x08	125 Hz
+4.2. Controle de Iluminação (Lighting Control)
+
+O controle de iluminação é feito através do endereço 0x0449. O pacote de controle de iluminação tem a seguinte estrutura:
+Índice	Valor	Descrição
+0x00	0x02	Cabeçalho
+0x01	0xF3	Comando de escrita
+0x02	0x49	Endereço LSB
+0x03	0x04	Endereço MSB
+0x04	0x06	Número de bytes (6)
+0x05	0x00	Reservado
+0x06	0x00	Reservado
+0x07	0x00	Reservado
+0x08	0xRR	Canal Vermelho (Red)
+0x09	0xGG	Canal Verde (Green)
+0x0A	0xBB	Canal Azul (Blue)
+
+Modos de Iluminação e Velocidades:
+Modo	Valor	Descrição
+Static	0x02	Iluminação estática
+Breathing	0x04	Efeito de respiração
+Rainbow	0x08	Efeito arco-íris
+Flashing	0x10	Efeito piscante
+
+Valores de Velocidade (Speed):
+
+Para os modos Breathing e Rainbow:
+
+    Baixa (Low): 0x08
+
+    Média (Med): 0x05
+
+    Alta (High): 0x02
+
+Para o modo Flashing:
+
+    Baixa (Low): 0x08
+
+    Média (Med): 0x05
+
+    Alta (High): 0x01
+
+Para os modos Alternating e Reactive:
+
+    Padrão (Default): 0x08
+
+Para os modos Static e Off:
+
+    Padrão (Default): 0x00
+
+Esses valores foram extraídos das notas de engenharia reversa da comunidade.
+4.3. DPI (Resolução)
+
+O M711 possui um sensor óptico Pixart PMW3325 com resolução de até 10.000 DPI. A versão FPS (M711-FPS) pode ter sensores diferentes, como o PMW3360 ou PMW3389, permitindo DPI ainda maiores. O controle de DPI é feito através do software oficial, mas a comunidade já implementou suporte parcial para alteração de DPI via protocolo.
+4.4. Mapeamento de Botões (Button Mapping)
+
+O mouse possui 7 botões programáveis (de um total de 9). A comunidade conseguiu mapear algumas ações de teclado que podem ser atribuídas aos botões. Abaixo está uma lista de ações "Windows Only" que foram identificadas no código do mouse_m908:
+Ação	Valor (Hex)
+basic_cut	0x11
+basic_copy	0x12
+basic_paste	0x13
+basic_select_all	0x14
+basic_find	0x15
+basic_new	0x16
+basic_print	0x17
+basic_save	0x18
+advanced_switch_window	0x19
+advanced_close_window	0x1a
+advanced_open_explorer	0x1b
+advanced_run	0x1c
+advanced_show_desktop	0x1d
+advanced_lock_pc	0x1e
+advanced_browser_home	0x1f
+advanced_browser_backward	0x20
+advanced_browser_forward	0x21
+advanced_browser_stop	0x22
+advanced_browser_refresh	0x23
+advanced_browser_search	0x24
+advanced_browser_favorite	0x25
+advanced_mail	0x26
+
+Observação: Essas ações dependem do software oficial da Redragon em execução no Windows e não funcionam de forma independente no hardware do mouse.
+4.5. Macros
+
+O M711 possui espaço para 15 macros, que são compartilhadas entre todos os perfis. Cada macro pode conter até 67 ações. O suporte a macros no mouse_m908 é parcial e, em alguns casos, as macros aplicadas não são capturadas de volta pelo software (leitura). A captura de pacotes USB durante a aplicação de macros revelou que o software oficial pode não transferir a macro sem que ela esteja vinculada a um botão específico.
+5. Ferramentas e Implementações
+
+Diversas ferramentas foram desenvolvidas para interagir com o protocolo do M711:
+5.1. mouse_m908
+
+    Descrição: Utilitário de linha de comando para Linux, BSD e Haiku que controla diversos mouses Redragon, incluindo o M711.
+
+    Status: Suporte parcial para o M711. Algumas funções podem não estar implementadas ou totalmente testadas.
+
+    Recursos: Permite aplicar configurações de um arquivo .ini, ler configurações do mouse (-R), definir perfil ativo (-p), e enviar macros (-m).
+
+    Repositório: https://github.com/dokutan/mouse_m908
+
+5.2. mouse_m711 (fork de rolimans)
+
+    Descrição: Um fork do mouse_m908 focado no M711, com o objetivo de adicionar suporte mais completo.
+
+    Status: O desenvolvimento parece estar em andamento, com alguns recursos já funcionando.
+
+    Repositório: https://github.com/rolimans/mouse_m711
+
+5.3. Redragon-RGB-SDK
+
+    Descrição: SDK não oficial em C# para controlar a iluminação RGB de dispositivos Redragon, incluindo o M711 Cobra e M711 FPS.
+
+    Recursos: Funções para inicializar o dispositivo e definir a cor RGB e o nível de brilho.
+
+    Repositório: https://github.com/D4rkTT/Redragon-RGB-SDK
+
+5.4. OpenRGB
+
+    Descrição: Projeto de código aberto para controle de iluminação RGB de diversos dispositivos. Possui um controlador para o Redragon M711 Cobra.
+
+    Status: O efeito "wave" (onda) apresenta problemas conhecidos na versão 0.2.
+
+    Wiki: https://gitlab.com/OpenRGBDevelopers/OpenRGB-Wiki/-/blob/master/Redragon-M711-Cobra.md
+
+6. Métodos de Engenharia Reversa
+
+Para quem deseja contribuir com a engenharia reversa do protocolo, os métodos recomendados pela comunidade são:
+
+    Captura de Pacotes USB: Utilizar uma máquina virtual (VM) com o software oficial da Redragon instalado e o Wireshark para capturar o tráfego USB. Isso permite ver os pacotes enviados ao mouse ao alterar configurações.
+
+    Comparação de Capturas (Diff): Capturar os pacotes antes e depois de alterar uma configuração específica e comparar os dados para identificar quais bytes mudaram. Essa é a principal técnica para mapear novos comandos.
+
+    Teste com Ferramentas Existentes: Utilizar o mouse_m908 com a opção -M generic para testar se o mouse responde a comandos genéricos. Isso pode ajudar a identificar funcionalidades compatíveis.
+
+    Cautela: Sempre ter o software oficial disponível (em uma VM) ao testar comandos desconhecidos, pois há o risco de tornar o mouse inutilizável (por exemplo, desabilitando o movimento em uma direção).
+
+7. Links Relevantes
+
+    Issue #2 do mouse_m908 (Discussão Principal): https://github.com/dokutan/mouse_m908/issues/2
+
+    Wiki do OpenRGB (M711 Cobra): https://gitlab.com/OpenRGBDevelopers/OpenRGB-Wiki/-/blob/master/Redragon-M711-Cobra.md
+
+    README do mouse_m908: https://github.com/dokutan/mouse_m908/blob/master/README.md
+
+    Redragon-RGB-SDK: https://github.com/D4rkTT/Redragon-RGB-SDK
+
+    Guia de Engenharia Reversa de USB (Bytepunk): https://bytepunk.wordpress.com/2017/03/25/reverse-engineering-a-usb-mouse/
+
+    Wiki de Engenharia Reversa de Protocolo USB (Razer): https://github.com/pez2001/razer_chroma_drivers/wiki/Reverse-Engineering-USB-Protocol
+
+8. Considerações Finais
+
+O protocolo do Redragon M711 é um sistema proprietário que foi extensivamente mapeado pela comunidade. Embora o suporte nas ferramentas existentes seja parcial, muitas funcionalidades já são controláveis, incluindo iluminação RGB, taxa de polling, DPI e mapeamento de botões. A principal limitação atual está no suporte a macros e em alguns endereços de memória ainda não documentados.
+
+A engenharia reversa contínua é incentivada pela comunidade, e qualquer contribuição (como capturas de pacotes ou relatos de funcionalidades) é bem-vinda. É fundamental ter cautela ao usar ferramentas de terceiros, pois há risco de tornar o dispositivo inutilizável. A recomendação é sempre manter o software oficial disponível para recuperação.

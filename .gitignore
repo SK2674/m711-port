@@ -1,0 +1,43 @@
+# Build / byte-compiled
+__pycache__/
+*.py[cod]
+*.so
+
+# Dados gerados: python3 m711/gerar_dados.py
+# (regenerado a partir dos .cpp do port/mouse_m908, que é submodule)
+# Mantido versionado de propósito: o projeto precisa rodar sem o submodule
+# e sem C++ instalado. Ver README "Dados gerados".
+
+# Configuração local do mouse
+*.ini.local
+m711.local.ini
+*.prof
+
+# Backups do estado do mouse
+backup-*.json
+backups/
+
+# Drivers compilados
+*.o
+*.a
+port/mouse_m908/mouse_m908
+port/mouse_m908/build/
+
+# Software oficial da Redragon — NÃO versionar.
+# Copyright da Redragon, 19 MB. O usuário baixa do site deles.
+# Ver README "Software oficial".
+*.exe
+*.msi
+
+# Editores / SO
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Ambiente virtual
+.venv/
+venv/
+env/
